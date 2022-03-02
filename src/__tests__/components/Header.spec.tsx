@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { RouterContext } from 'next/dist/next-server/lib/router-context';
+import { RouterContext } from 'next/dist/shared/lib/router-context';
 
 import Header from '../../components/Header';
 
@@ -10,9 +10,10 @@ describe('Header', () => {
   beforeAll(() => {
     mockedPush.mockImplementation(() => Promise.resolve());
     const MockedRouterContext = RouterContext as React.Context<unknown>;
-    RouterWrapper = ({ children }): JSX.Element => {
+    RouterWrapper = function ({ children }): JSX.Element {
       return (
         <MockedRouterContext.Provider
+          // eslint-disable-next-line react/jsx-no-constructed-context-values
           value={{
             push: mockedPush,
           }}
