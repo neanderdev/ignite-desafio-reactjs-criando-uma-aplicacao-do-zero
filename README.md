@@ -14,6 +14,7 @@
 O projeto ainda está em desenvolvimento e as próximas atualizações serão voltadas nas seguintes tarefas:
 
 - [x] Criando post com o Prismic CMS e consumindo a API
+- [ ] Usar o preview do Prismic CMS
 - [ ] Adicionar featura de poder comentar nos post
 - [ ] Adicionar featura de mostrar a data que o post foi editado
 - [ ] Responsividade
