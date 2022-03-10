@@ -8,12 +8,14 @@ import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
 import { getPrismicClient } from '../../services/prismic';
 
-import { formatDate } from '../../utils/formatData';
+import { formatDate, formatDateEditPost } from '../../utils/formatData';
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 
 interface Post {
+  uid: string;
   first_publication_date: string | null;
+  last_publication_date: string;
   data: {
     title: string;
     banner: {
@@ -32,9 +34,16 @@ interface Post {
 interface PostProps {
   post: Post;
   preview: boolean;
+  prevPost: Post | null;
+  nextPost: Post | null;
 }
 
-export default function Post({ post, preview }: PostProps): JSX.Element {
+export default function Post({
+  post,
+  preview,
+  prevPost,
+  nextPost,
+}: PostProps): JSX.Element {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -89,6 +98,15 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
             </time>
           </div>
 
+          {post.last_publication_date &&
+            post.last_publication_date !== post.first_publication_date && (
+              <div className={styles.edit}>
+                <span>
+                  * editado em {formatDateEditPost(post.last_publication_date)}
+                </span>
+              </div>
+            )}
+
           {post.data.content.map(content => {
             return (
               <section key={content.heading} className={styles.postContent}>
@@ -101,15 +119,38 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
               </section>
             );
           })}
-
-          {preview && (
-            <aside className={commonStyles.exitPreviewButton}>
-              <Link href="/api/exit-preview">
-                <a>Sair do modo Preview</a>
-              </Link>
-            </aside>
-          )}
         </article>
+
+        <footer className={styles.navigationController}>
+          <div>
+            {prevPost && (
+              <Link href={`/post/${prevPost.uid}`}>
+                <a>
+                  <h4>{prevPost.data.title}</h4>
+                  <span>Post anterior</span>
+                </a>
+              </Link>
+            )}
+          </div>
+          <div>
+            {nextPost && (
+              <Link href={`/post/${nextPost.uid}`}>
+                <a>
+                  <h4>{nextPost.data.title}</h4>
+                  <span>Próximo post</span>
+                </a>
+              </Link>
+            )}
+          </div>
+        </footer>
+
+        {preview && (
+          <aside className={commonStyles.exitPreviewButton}>
+            <Link href="/api/exit-preview">
+              <a>Sair do modo Preview</a>
+            </Link>
+          </aside>
+        )}
       </main>
     </>
   );
@@ -149,6 +190,7 @@ export const getStaticProps: GetStaticProps = async ({
   const post = {
     uid: response.uid,
     first_publication_date: response.first_publication_date ?? `${new Date()}`,
+    last_publication_date: response.last_publication_date,
     data: {
       title: response.data.title,
       subtitle: response.data.subtitle,
@@ -165,10 +207,31 @@ export const getStaticProps: GetStaticProps = async ({
     },
   };
 
+  const prevPost = await prismicClient.query(
+    [prismic.Predicates.at('document.type', 'posts')],
+    {
+      pageSize: 1,
+      orderings: ['document.first_publication_date'],
+      after: response.id,
+    }
+  );
+
+  const nextPost = await prismicClient.query(
+    [prismic.Predicates.at('document.type', 'posts')],
+    {
+      pageSize: 1,
+      orderings: ['document.first_publication_date desc'],
+
+      after: response.id,
+    }
+  );
+
   return {
     props: {
       post,
       preview,
+      prevPost: prevPost.results[0] ?? null,
+      nextPost: nextPost.results[0] ?? null,
     },
     revalidate: 60 * 5, // 5 minutes
   };
