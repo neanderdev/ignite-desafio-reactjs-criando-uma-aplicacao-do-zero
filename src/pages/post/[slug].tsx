@@ -6,6 +6,8 @@ import * as prismic from '@prismicio/client';
 import { RichText } from 'prismic-dom';
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
+import UtterancesComments from '../../components/UtterancesComments';
+
 import { getPrismicClient } from '../../services/prismic';
 
 import { formatDate, formatDateEditPost } from '../../utils/formatData';
@@ -143,6 +145,8 @@ export default function Post({
             )}
           </div>
         </footer>
+
+        <UtterancesComments />
 
         {preview && (
           <aside className={commonStyles.exitPreviewButton}>
