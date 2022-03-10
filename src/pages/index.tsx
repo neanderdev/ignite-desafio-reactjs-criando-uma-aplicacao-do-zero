@@ -28,9 +28,13 @@ interface PostPagination {
 
 interface HomeProps {
   postsPagination: PostPagination;
+  preview: boolean;
 }
 
-export default function Home({ postsPagination }: HomeProps): JSX.Element {
+export default function Home({
+  postsPagination,
+  preview,
+}: HomeProps): JSX.Element {
   const [nextPage, setNextPage] = useState<string>(postsPagination.next_page);
 
   const formattedPosts = postsPagination.results.map(post => {
@@ -91,18 +95,30 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
               Carregar mais posts
             </button>
           )}
+
+          {preview && (
+            <aside className={commonStyles.exitPreviewButton}>
+              <Link href="/api/exit-preview">
+                <a>Sair do modo Preview</a>
+              </Link>
+            </aside>
+          )}
         </div>
       </main>
     </>
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async ({
+  preview = false,
+  previewData,
+}) => {
   const prismicClient = getPrismicClient();
   const postsResponse = await prismicClient.query(
     [prismic.predicate.at('document.type', 'posts')],
     {
-      pageSize: 1,
+      pageSize: 2, // post per page
+      ref: previewData?.ref ?? null,
     }
   );
 
@@ -111,7 +127,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const posts = postsResponse.results.map(post => {
     return {
       uid: post.uid,
-      first_publication_date: post.first_publication_date,
+      first_publication_date: post.first_publication_date ?? `${new Date()}`,
       data: {
         title: post.data.title,
         subtitle: post.data.subtitle,
@@ -128,6 +144,7 @@ export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {
       postsPagination,
+      preview,
     },
     revalidate: 60 * 5, // 5 minutes
   };

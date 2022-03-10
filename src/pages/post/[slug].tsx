@@ -1,5 +1,6 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import * as prismic from '@prismicio/client';
 import { RichText } from 'prismic-dom';
@@ -30,9 +31,10 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  preview: boolean;
 }
 
-export default function Post({ post }: PostProps): JSX.Element {
+export default function Post({ post, preview }: PostProps): JSX.Element {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -99,6 +101,14 @@ export default function Post({ post }: PostProps): JSX.Element {
               </section>
             );
           })}
+
+          {preview && (
+            <aside className={commonStyles.exitPreviewButton}>
+              <Link href="/api/exit-preview">
+                <a>Sair do modo Preview</a>
+              </Link>
+            </aside>
+          )}
         </article>
       </main>
     </>
@@ -125,14 +135,20 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async context => {
+export const getStaticProps: GetStaticProps = async ({
+  params,
+  preview = false,
+  previewData,
+}) => {
   const prismicClient = getPrismicClient();
-  const { slug } = context.params;
-  const response = await prismicClient.getByUID('posts', String(slug), {});
+  const { slug } = params;
+  const response = await prismicClient.getByUID('posts', String(slug), {
+    ref: previewData?.ref ?? null,
+  });
 
   const post = {
     uid: response.uid,
-    first_publication_date: response.first_publication_date,
+    first_publication_date: response.first_publication_date ?? `${new Date()}`,
     data: {
       title: response.data.title,
       subtitle: response.data.subtitle,
@@ -152,6 +168,7 @@ export const getStaticProps: GetStaticProps = async context => {
   return {
     props: {
       post,
+      preview,
     },
     revalidate: 60 * 5, // 5 minutes
   };
